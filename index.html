@@ -155,10 +155,6 @@
             </div>
           </div>
 
-          <div id="mapping-success-msg" style="display: none; background: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #065f46; font-weight: 600;">
-            ✅ Structural harmonization complete.
-          </div>
-
           <div id="mapping-actions" style="text-align: center; margin-top: 30px;">
             <button class="btn btn-start" onclick="confirmMapping()">🔄 Update Column Name</button>
           </div>
@@ -275,7 +271,7 @@
             </div>
 
             <!-- Gravity Configuration (Now appears after sync) -->
-            <div class="step-group" style="margin-top: 40px; background: #f0fdf4; border-color: #bbf7d0;">
+            <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 30px;">
                <h3 style="color: #174871; margin-bottom: 15px;">7. Gravity Removal</h3>
                <p style="font-size: 0.85rem; margin-bottom: 15px;">Specify local gravity units and apply a complementary filter to extract linear acceleration.</p>
                <div class="input-group-grid" style="grid-template-columns: 1fr 1fr;">
@@ -294,7 +290,7 @@
                </div>
                
                <div style="text-align: center; margin-top: 30px;">
-                  <button class="btn btn-start" onclick="applyFinalProcessAndExport()">🔄 Apply Gravity Removal</button>
+                  <button class="btn btn-start" onclick="applyFinalProcessAndExport(event)">🔄 Apply Gravity Removal</button>
                </div>
             </div>
           </div>
@@ -302,8 +298,8 @@
 
         <!-- Phase D: Final Download (Simplified) -->
         <div id="final-section" class="step-group" style="display: none; margin-top: 30px; text-align: center;">
-           <div class="step-badge">Phase D: Outcome & Batch Execution</div>
-           <h3 style="color: #174871;">Harmonization & Filtering Complete</h3>
+           <div class="step-badge">Phase D: Outcome & Execution</div>
+           <h3 style="color: #174871;">Harmonization Complete</h3>
            
            <!-- Final Verification Plot -->
            <div id="final-verification-area" style="margin-top: 30px;">
@@ -316,6 +312,32 @@
                 The comparison bars (top) show that the static gravitational component has been removed, bringing the mean acceleration to ~0g. 
                 The waveform (bottom) represents the clean linear acceleration used for activity feature extraction.
               </div>
+
+              <!-- New: Custom Waveform Inspector -->
+              <div id="custom-inspector" style="margin-top: 30px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; text-align: left;">
+                <h4 style="color: #174871; margin-bottom: 5px;">🔍 Custom Waveform Inspector</h4>
+                <p style="font-size: 0.85rem; color: #475569; margin-bottom: 20px;">
+                  Select a specific body segment and define the start/end index range to generate a detailed time-series waveform of the harmonized linear acceleration.
+                </p>
+                <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 15px; align-items: flex-end;">
+                  <div class="form-group">
+                    <label style="font-size: 0.75rem;">Select Segment</label>
+                    <select id="inspect-segment" style="padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: white;"></select>
+                  </div>
+                  <div class="form-group">
+                    <label style="font-size: 0.75rem;">Start Index</label>
+                    <input type="number" id="inspect-start" value="0" min="0" style="padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                  </div>
+                  <div class="form-group">
+                    <label style="font-size: 0.75rem;">End Index</label>
+                    <input type="number" id="inspect-end" value="1000" min="1" style="padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                  </div>
+                  <button class="btn" onclick="updateInspectorPlot()" style="margin: 0; background: #174871; height: 38px; min-width: 120px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;">📉 View Plot</button>
+                </div>
+                <div id="inspector-plot-container" style="margin-top: 20px;">
+                  <img id="inspector-img" class="analysis-img" style="display: none; background: white;">
+                </div>
+              </div>
            </div>
 
            <div id="final-download-area" style="margin-top: 30px;"></div>
@@ -325,7 +347,7 @@
               <h3 style="color: #174871; margin-bottom: 15px;">8. Batch Processing</h3>
               <p style="font-size: 0.85rem; margin-bottom: 20px;">
                 Apply the confirmed synchronization and standardization settings to multiple files in a folder. All files must follow the same sensor configuration.
-                <br><small>*Note: This feature requires a modern browser (Chrome/Edge) and is recommended to run in a Localhost or HTTPS environment.</small>
+                <br><small>Note: Please make sure all files are properly renamed before uploading.</small>
               </p>
 
               <div class="input-group-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -341,6 +363,93 @@
                   <div style="display: flex; gap: 10px;">
                     <input type="text" id="batch-output-path" placeholder="No folder selected" readonly style="flex: 1; background: #f1f5f9;">
                     <button class="btn" onclick="selectBatchFolder('output')" style="margin: 0; min-width: 80px; padding: 8px; font-size: 0.8rem;">Select</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="step-group" style="margin-top: 20px; background: #f8fafc; border-style: dashed;">
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                  <input type="checkbox" id="batch-rename-toggle" style="width: 20px; height: 20px; margin-right: 12px;" onchange="toggleRestructureUI()">
+                  <strong style="color: #174871;">Enable File Restructuring (Rename & Standardize)</strong>
+                </div>
+                
+                <div id="restructure-config-ui" style="display: none; padding: 15px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+                  <div style="font-size: 0.8rem; color: #475569; margin-bottom: 20px; line-height: 1.5; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px;">
+                    <strong>How to configure restructuring:</strong><br>
+                    This tool renames your files to the standard format: <code>p-{pid}_s-{session}_a-{activity}.csv</code>. For each field (PID, Session, Activity), choose where the information should come from:
+                    <ul style="margin-top: 8px; margin-left: 18px;">
+                      <li><b>Filename:</b> Extracts data from the existing filename (see modes below).</li>
+                      <li><b>Folder Path Part:</b> Uses a specific segment of the folder's directory path.</li>
+                      <li><b>CSV Column:</b> Reads the value directly from a row in the original data file.</li>
+                      <li><b>Fixed Value:</b> Applies the same manual entry to all processed files.</li>
+                    </ul>
+
+                    <div style="margin-top: 15px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.75rem; color: #475569;">
+                      <strong style="display: block; margin-bottom: 5px; font-size: 0.75rem;">Filename Extraction Modes:</strong>
+                      <p style="margin-bottom: 8px; font-size: 0.75rem;"><b>1. Whole Stem:</b> Uses the entire filename without the extension.
+                      <br><i>Example: <code>P01.csv</code> extracts <b>P01</b>.</i></p>
+                      <p style="margin-bottom: 8px; font-size: 0.75rem;"><b>2. Split & Pick Index:</b> Splits the name by a <b>Delimiter</b> and picks a part by its <b>Index</b>.
+                      <br><i>Example: <code>P01_S02_Walk.csv</code> with <code>_</code> and Index <code>1</code> extracts <b>S02</b>.</i></p>
+                      <p style="margin-bottom: 0; font-size: 0.75rem;"><b>3. Regex Capture Group:</b> Advanced mode using <code>()</code> to define what to extract.
+                      <br><i>Example: <code>-Session-(\\d+)</code> extracts <b>02</b>.</i></p>
+                    </div>
+
+                    <div style="margin-top: 10px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.75rem; color: #475569;">
+                      <strong style="display: block; margin-bottom: 5px; font-size: 0.75rem;">Folder Path Part Mode:</strong>
+                      <p style="font-size: 0.75rem; margin-bottom: 0;">Extracts values from the folder hierarchy. Each level of the folder path is assigned an <b>Index</b> (starting from 0).
+                      <br><i>Example Path: <code>/Data/P01/Session_A/walk.csv</code></i>
+                      <br>• Index <b>1</b> extracts <code>P01</code>.
+                      <br>• Index <b>2</b> extracts <code>Session_A</code>.</p>
+                    </div>
+                  </div>
+                  
+                  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                    <!-- PID Config -->
+                    <div class="restructure-field">
+                      <label style="font-size: 0.8rem; font-weight: 600; color: #174871; display: block; margin-bottom: 5px;">Participant (PID)</label>
+                      <select id="pid-source" class="restructure-select" onchange="updateRestructureInputs('pid')">
+                        <option value="filename">Filename</option>
+                        <option value="path">Folder Path Part</option>
+                        <option value="column">CSV Column</option>
+                        <option value="literal">Fixed Value</option>
+                      </select>
+                      <div id="pid-extra" class="restructure-extra"></div>
+                    </div>
+
+                    <!-- Session Config -->
+                    <div class="restructure-field">
+                      <label style="font-size: 0.8rem; font-weight: 600; color: #174871; display: block; margin-bottom: 5px;">Session</label>
+                      <select id="session-source" class="restructure-select" onchange="updateRestructureInputs('session')">
+                        <option value="filename">Filename</option>
+                        <option value="path">Folder Path Part</option>
+                        <option value="column">CSV Column</option>
+                        <option value="literal">Fixed Value</option>
+                      </select>
+                      <div id="session-extra" class="restructure-extra"></div>
+                    </div>
+
+                    <!-- Activity Config -->
+                    <div class="restructure-field">
+                      <label style="font-size: 0.8rem; font-weight: 600; color: #174871; display: block; margin-bottom: 5px;">Activity</label>
+                      <select id="activity-source" class="restructure-select" onchange="updateRestructureInputs('activity')">
+                        <option value="filename">Filename</option>
+                        <option value="path">Folder Path Part</option>
+                        <option value="column">CSV Column</option>
+                        <option value="literal">Fixed Value</option>
+                      </select>
+                      <div id="activity-extra" class="restructure-extra"></div>
+                    </div>
+                  </div>
+
+                  <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #f1f5f9; display: flex; gap: 20px;">
+                     <div class="form-group" style="flex: 1;">
+                        <label style="font-size: 0.75rem;">Global Delimiter (if splitting)</label>
+                        <input type="text" id="restruc-delim" value="_" style="padding: 5px; font-size: 0.8rem;">
+                     </div>
+                     <div class="form-group" style="flex: 1;">
+                        <label style="font-size: 0.75rem;">Zero-Padding Width (e.g. 2 for '01')</label>
+                        <input type="number" id="restruc-zfill" value="0" min="0" max="5" style="padding: 5px; font-size: 0.8rem;">
+                     </div>
                   </div>
                 </div>
               </div>
@@ -398,6 +507,9 @@
 
     .matrix-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 15px; }
     .matrix-grid { display: grid; grid-template-columns: 80px 1fr 1fr 1fr; gap: 10px; align-items: center; }
+
+    .restructure-select { width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.8rem; background: #fff; }
+    .restructure-extra { margin-top: 5px; }
 
     /* Sensor Table Styles */
     .sensor-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
@@ -500,27 +612,13 @@
     </div>
   </footer>
 
-  <script src="main.js"></script>
-</body>
-<style>
-/* Standard CSS tags should be <style> */
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-    font-family: 'Inter', sans-serif;
-    flex-direction: column;
-    align-items: center;
-}
-
-p { 
-  color: #4c4c4c; 
-  font-size: 1rem; 
-}
-
-h2{
-  font-family: 'Verdana', serif;
-  font-weight: bold;
+  <style>
+    /* Move styles inside body or head for proper parsing */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; flex-direction: column; align-items: center; }
+    h2 {
+      font-family: 'Verdana', serif;
+      font-weight: bold;
     color: #174871;
     font-size: 1.8rem;
     margin-top: 0;
@@ -942,8 +1040,7 @@ function goBackToMapping() {
     // Show Phase B's back button again
     document.getElementById('back-to-form-btn').style.display = 'inline-block';
 
-    // Hide success message and restore the original harmonize button
-    document.getElementById('mapping-success-msg').style.display = 'none';
+    // Restore the original harmonize button
     document.getElementById('mapping-actions').innerHTML = `<button class="btn btn-start" onclick="confirmMapping()">🔄 Update Column Name</button>`;
 
     const mappingInputs = document.querySelectorAll('#mapping-section select, #mapping-section input');
@@ -1263,10 +1360,16 @@ orient_imgs = {}
 for s in sensors_list:
     fig_s = plt.figure(figsize=(3, 3)); ax_s = fig_s.add_subplot(111, projection='3d')
     R_guess = np.array(sensor_guesses[s])
+    is_foot = "FOOT" in s.upper()
     for j in range(3):
         # To show the Raw Axes (X,Y,Z) in ISB space, we plot columns of R
         v_vec = R_guess[:, j] * 0.5
-        ax_s.quiver(0, 0, 0, v_vec[0], v_vec[2], v_vec[1], color=colors[j], linewidth=3, arrow_length_ratio=0.3)
+        if is_foot:
+            # Foot ISB: X=Up, Y=Backward, Z=Right. Map ISB X to plot vertical (Z).
+            ax_s.quiver(0, 0, 0, v_vec[1], v_vec[2], v_vec[0], color=colors[j], linewidth=3, arrow_length_ratio=0.3)
+        else:
+            # Body ISB: Y=Up, X=Forward, Z=Right. Map ISB Y to plot vertical (Z).
+            ax_s.quiver(0, 0, 0, v_vec[0], v_vec[2], v_vec[1], color=colors[j], linewidth=3, arrow_length_ratio=0.3)
     ax_s.set_xlim(-0.6, 0.6); ax_s.set_ylim(-0.6, 0.6); ax_s.set_zlim(-0.6, 0.6)
     ax_s.set_axis_off()
     orient_imgs[s] = get_plot_b64(fig_s)
@@ -1384,10 +1487,8 @@ res_dict
         });
 
         // Update Phase B UI with success and download button
-        const successMsg = document.getElementById('mapping-success-msg');
         const actionsDiv = document.getElementById('mapping-actions');
         
-        if(successMsg) successMsg.style.display = 'block';
         if(actionsDiv) actionsDiv.innerHTML = `
             <a href="${url}" download="${fileName}" class="btn" style="background: #985672; color: white; text-decoration: none; display: inline-block; line-height: 24px;">
                 📥 Download Structural CSV
@@ -1541,7 +1642,7 @@ aft_acc, aft_pca = gen_plots(df_rotation_preview)
  * Normalizes data to g units, applies gravity removal filters,
  * and prepares the final visualization.
  */
-async function applyFinalProcessAndExport() {
+async function applyFinalProcessAndExport(event) {
     const loading = document.getElementById('loading-overlay');
     loading.style.display = 'flex';
 
@@ -1705,12 +1806,12 @@ for idx, p in enumerate(pfxs):
 
 ax_b.axhline(0, color='black', lw=1, ls='--')
 ax_b.set_ylim(-y_limit_sym_before, y_limit_sym_before)
-ax_b.set_title("Before: Static Mean (Grouped)"); ax_b.set_ylabel("Accel (g)")
+ax_b.set_title("Before: Static Mean"); ax_b.set_ylabel("Accel (g)")
 ax_b.set_xticks(x_f); ax_b.set_xticklabels(pfxs, rotation=30); ax_b.legend(fontsize='x-small')
 
 ax_a.axhline(0, color='black', lw=1, ls='--')
 ax_a.set_ylim(-y_limit_sym_after, y_limit_sym_after)
-ax_a.set_title("After: Static Mean (Grouped)"); ax_a.set_ylabel("Accel (g)")
+ax_a.set_title("After: Static Mean"); ax_a.set_ylabel("Accel (g)")
 ax_a.set_xticks(x_f); ax_a.set_xticklabels(pfxs, rotation=30); ax_a.legend(fontsize='x-small')
 plt.tight_layout()
 buf_sum = io.BytesIO(); fig_sum.savefig(buf_sum, format='png'); plt.close(fig_sum)
@@ -1745,26 +1846,39 @@ for p in pfxs:
         const sumWrapper = document.createElement('div');
         sumWrapper.className = "plot-item";
         sumWrapper.innerHTML = `
-            <h5 style="margin-bottom: 10px; color: #174871; border-left: 4px solid #10b981; padding-left: 10px;">
-                Overall Gravity Removal Comparison (Grouped Sensors)
+            <h5 style="margin-bottom: 10px; color: #174871; border-left: 4px solid #174871; padding-left: 10px;">
+                Overall Gravity Removal Comparison
             </h5>
             <img src="data:image/png;base64,${summaryB64}" class="analysis-img" style="max-width: 100%; height: auto;">
         `;
         container.appendChild(sumWrapper);
 
+        // Render Waveform Section Header
+        const waveHeader = document.createElement('h5');
+        waveHeader.style = "margin-top: 20px; margin-bottom: 15px; color: #174871; text-align: center;";
+        waveHeader.innerText = "Overall Waveform Visualization";
+        container.appendChild(waveHeader);
+
         // Render Individual Waveforms
         waveformsMap.forEach((b64, sensorName) => {
-            const wrapper = document.createElement('div');
-            wrapper.className = "plot-item";
-            wrapper.style.maxWidth = "100%";
-            wrapper.innerHTML = `
-                <h5 style="margin-bottom: 10px; color: #174871; border-left: 4px solid #3b82f6; padding-left: 10px;">
-                    Verification: ${sensorName}
-                </h5>
-                <img src="data:image/png;base64,${b64}" class="analysis-img" style="max-width: 100%; height: auto;">
-            `;
-            container.appendChild(wrapper);
+            const img = document.createElement('img');
+            img.src = "data:image/png;base64," + b64;
+            img.className = "analysis-img";
+            img.style = "max-width: 100%; height: auto; margin-bottom: 20px;";
+            container.appendChild(img);
         });
+
+        // Populate Custom Inspector Dropdown
+        const inspectSelect = document.getElementById('inspect-segment');
+        inspectSelect.innerHTML = "";
+        waveformsMap.forEach((_, sensorName) => {
+            const opt = document.createElement('option');
+            opt.value = sensorName;
+            opt.textContent = sensorName;
+            inspectSelect.appendChild(opt);
+        });
+        const totalRows = await pyodide.runPythonAsync(`len(df_final)`);
+        document.getElementById('inspect-end').value = totalRows;
 
         const csvFinal = await pyodide.runPythonAsync(`df_final.to_csv(index=False)`);
         const blob = new Blob([csvFinal], { type: 'text/csv' });
@@ -1775,12 +1889,12 @@ for p in pfxs:
         const act = document.getElementById('input-activity').value || "unknown";
         const fileName = `p-${pid}_s-${sid}_a-${act}_harmonized.csv`;
 
-        document.getElementById('final-download-area').innerHTML = `
+        document.getElementById('final-download-area').innerHTML = `<br>
             <a href="${url}" download="${fileName}" class="btn btn-start" style="background: #985672; margin-bottom: 20px;">📥 Download Harmonized CSV</a>
             <div style="margin-top: 20px; margin-bottom: 20px;">
-                <p style="font-weight: 600; color: #985672;"><br>Congradulation! You finished the data harmonization pipeline.</p>
+                <p style="font-weight: 600; color: #985672;"><br>Congratulations! You’ve completed the data harmonization pipeline.</p>
                 <br>
-                <p style="color: #475569;">Do you have more data to sync? You also can batch update here:</p>
+                <p style="color: #475569;">Do you have more data to process? You can also apply this to a batch of files here:</p>
             </div>
             <button class="btn" onclick="showBatchSection()" style="background: #174871; margin-top: 10px;">More: Batch Processing →</button>
         `;
@@ -1799,6 +1913,50 @@ for p in pfxs:
 }
 
 /**
+ * Custom Waveform Inspector: Plots a specific time window for a selected segment
+ */
+async function updateInspectorPlot() {
+    const seg = document.getElementById('inspect-segment').value;
+    const start = parseInt(document.getElementById('inspect-start').value);
+    const end = parseInt(document.getElementById('inspect-end').value);
+
+    if (isNaN(start) || isNaN(end) || start >= end) {
+        alert("Please enter a valid index range (Start < End).");
+        return;
+    }
+
+    const loading = document.getElementById('loading-overlay');
+    loading.style.display = 'flex';
+
+    try {
+        pyodide.globals.set("insp_seg", seg);
+        pyodide.globals.set("insp_start", start);
+        pyodide.globals.set("insp_end", end);
+
+        const b64 = await pyodide.runPythonAsync(`
+sub_df = df_final.iloc[insp_start:insp_end]
+cols = list(SENSORS[insp_seg]["acc"])
+fig_i, ax_i = plt.subplots(figsize=(15, 4))
+for j in range(3):
+    ax_i.plot(sub_df.index, sub_df[cols[j]], color=AX_COLORS[j], label=f"ISB {['X','Y','Z'][j]}")
+ax_i.axhline(0, color='black', lw=1, ls='--')
+ax_i.set_title(f"Detailed View: {insp_seg} (Index {insp_start} to {insp_end})")
+ax_i.set_xlabel("Sample Index"); ax_i.set_ylabel("Accel (g)")
+ax_i.legend(loc='upper right', fontsize='x-small')
+plt.tight_layout()
+get_plot_b64(fig_i)
+        `);
+        const img = document.getElementById('inspector-img');
+        img.src = "data:image/png;base64," + b64;
+        img.style.display = 'block';
+    } catch (err) {
+        alert("Plotting error: " + err);
+    } finally {
+        loading.style.display = 'none';
+    }
+}
+
+/**
  * Phase E: Batch Processing Logic
  * Utilizes the File System Access API to process multiple files locally
  * using the transformation logic defined in previous steps.
@@ -1809,6 +1967,65 @@ let outputDirHandle = null;
 function showBatchSection() {
     document.getElementById('batch-section').style.display = 'block';
     document.getElementById('batch-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+/**
+ * UI Helpers for Batch Restructuring
+ */
+function toggleRestructureUI() {
+    const isChecked = document.getElementById('batch-rename-toggle').checked;
+    const ui = document.getElementById('restructure-config-ui');
+    ui.style.display = isChecked ? 'block' : 'none';
+    if (isChecked) {
+        ['pid', 'session', 'activity'].forEach(updateRestructureInputs);
+    }
+}
+
+function updateRestructureInputs(field) {
+    const source = document.getElementById(`${field}-source`).value;
+    const container = document.getElementById(`${field}-extra`);
+    let html = '';
+
+    if (source === 'filename') {
+        html = `
+            <select id="${field}-fn-mode" style="width: 100%; margin-top: 5px; font-size: 0.75rem; padding: 4px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                <option value="whole">Whole Stem</option>
+                <option value="split">Split & Pick Index</option>
+                <option value="regex">Regex Capture Group</option>
+            </select>
+            <input type="text" id="${field}-fn-val" placeholder="Index or Regex" style="width: 100%; margin-top: 5px; font-size: 0.75rem; padding: 4px; border-radius: 4px; border: 1px solid #cbd5e1;">
+        `;
+    } else if (source === 'path') {
+        html = `<input type="number" id="${field}-path-idx" value="0" min="0" placeholder="Part Index" style="width: 100%; margin-top: 5px; font-size: 0.75rem; padding: 4px; border-radius: 4px; border: 1px solid #cbd5e1;">`;
+    } else if (source === 'column') {
+        html = `<input type="text" id="${field}-col-name" placeholder="Exact Column Name" style="width: 100%; margin-top: 5px; font-size: 0.75rem; padding: 4px; border-radius: 4px; border: 1px solid #cbd5e1;">`;
+    } else if (source === 'literal') {
+        html = `<input type="text" id="${field}-lit-val" placeholder="Fixed value" style="width: 100%; margin-top: 5px; font-size: 0.75rem; padding: 4px; border-radius: 4px; border: 1px solid #cbd5e1;">`;
+    }
+    container.innerHTML = html;
+}
+
+function getRestructureSpecs() {
+    const fields = ['pid', 'session', 'activity'];
+    const specs = {};
+    fields.forEach(f => {
+        const source = document.getElementById(`${f}-source`).value;
+        const spec = { source: source };
+        if (source === 'filename') {
+            spec.mode = document.getElementById(`${f}-fn-mode`).value;
+            spec.val = document.getElementById(`${f}-fn-val`).value;
+        } else if (source === 'path') {
+            spec.index = parseInt(document.getElementById(`${f}-path-idx`).value) || 0;
+        } else if (source === 'column') {
+            spec.col = document.getElementById(`${f}-col-name`).value;
+        } else if (source === 'literal') {
+            spec.val = document.getElementById(`${f}-lit-val`).value;
+        }
+        specs[f] = spec;
+    });
+    specs.delim = document.getElementById('restruc-delim').value || '_';
+    specs.zfill = parseInt(document.getElementById('restruc-zfill').value) || 0;
+    return specs;
 }
 
 async function selectBatchFolder(type) {
@@ -1844,6 +2061,19 @@ function logBatch(msg) {
     consoleEle.scrollTop = consoleEle.scrollHeight;
 }
 
+/**
+ * Helper: Recursively walk through directories to find all CSV files
+ */
+async function* walkDirectory(dirHandle, relativePath = "") {
+    for await (const entry of dirHandle.values()) {
+        if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.csv')) {
+            yield { handle: entry, relativePath: relativePath + entry.name };
+        } else if (entry.kind === 'directory') {
+            yield* walkDirectory(entry, relativePath + entry.name + "/");
+        }
+    }
+}
+
 async function runBatchProcessing() {
     if (!inputDirHandle || !outputDirHandle) return;
     
@@ -1852,24 +2082,82 @@ async function runBatchProcessing() {
     runBtn.innerText = "Processing...";
     
     logBatch("🚀 Starting batch processing...");
+    const shouldRename = document.getElementById('batch-rename-toggle').checked;
+    const fsValue = document.getElementById('input-fs').value;
+    
+    if (shouldRename) {
+        pyodide.globals.set("restruc_specs", pyodide.toPy(getRestructureSpecs()));
+    }
+
     let successCount = 0;
     let failCount = 0;
+    pyodide.globals.set("user_fs", parseFloat(fsValue));
 
     try {
-        for await (const entry of inputDirHandle.values()) {
-            if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.csv')) {
-                logBatch(`Reading: ${entry.name}...`);
+        for await (const { handle, relativePath } of walkDirectory(inputDirHandle)) {
+            logBatch(`Reading: ${relativePath}...`);
                 
                 try {
-                    const file = await entry.getFile();
+                    const file = await handle.getFile();
                     const content = await file.text();
                     
                     // Write to Pyodide FS
                     pyodide.FS.writeFile("batch_input.csv", content);
+                    pyodide.globals.set("current_filename", relativePath);
+                    pyodide.globals.set("should_rename", shouldRename);
                     
-                    // Run the same pipeline logic in Python
                     await pyodide.runPythonAsync(`
+import re
+from pathlib import Path
+G0 = 9.80665
+
+def extract_field(field_spec, filename, df, global_specs):
+    src = field_spec["source"]
+    raw = ""
+    if src == "literal":
+        raw = field_spec.get("val", "")
+    elif src == "filename":
+        stem = Path(filename).stem
+        mode = field_spec.get("mode", "whole")
+        if mode == "whole":
+            raw = stem
+        elif mode == "split":
+            tokens = stem.split(global_specs.get("delim", "_"))
+            try:
+                idx = int(field_spec.get("val", 0))
+                raw = tokens[idx] if 0 <= idx < len(tokens) else stem
+            except: raw = stem
+        elif mode == "regex":
+            m = re.search(field_spec.get("val", ""), stem)
+            raw = m.group(1) if m and m.groups() else (m.group(0) if m else stem)
+    elif src == "path":
+        parts = filename.split("/")
+        try:
+            idx = int(field_spec.get("index", 0))
+            raw = parts[idx] if 0 <= idx < len(parts) else "unknown"
+        except: raw = "unknown"
+    elif src == "column":
+        col = field_spec.get("col")
+        if col in df.columns:
+            raw = str(df[col].iloc[0]).strip()
+        else:
+            raw = "unknown"
+    
+    z = int(global_specs.get("zfill", 0))
+    if z > 0 and str(raw).isdigit():
+        raw = str(raw).zfill(z)
+    return str(raw)
+
 batch_df = pd.read_csv("batch_input.csv")
+
+final_name = current_filename.replace(".csv", "_harmonized.csv")
+if should_rename:
+    s = restruc_specs
+    p = extract_field(s["pid"], current_filename, batch_df, s)
+    s_val = extract_field(s["session"], current_filename, batch_df, s)
+    a = extract_field(s["activity"], current_filename, batch_df, s)
+    final_name = f"p-{p}_s-{s_val}_a-{a}.csv"
+
 batch_df = batch_df.rename(columns=col_mapping)
 batch_df = batch_df.loc[:, ~batch_df.columns.duplicated()]
 
@@ -1907,7 +2195,7 @@ csv_output = batch_df.to_csv(index=False)
                     `);
                     
                     const resultCsv = pyodide.globals.get("csv_output");
-                    const outputFileName = entry.name.replace(".csv", "_harmonized.csv");
+                    const outputFileName = pyodide.globals.get("final_name");
                     
                     const newFileHandle = await outputDirHandle.getFileHandle(outputFileName, { create: true });
                     const writable = await newFileHandle.createWritable();
@@ -1917,16 +2205,17 @@ csv_output = batch_df.to_csv(index=False)
                     logBatch(`✅ Saved: ${outputFileName}`);
                     successCount++;
                 } catch (fileErr) {
-                    logBatch(`❌ Error processing ${entry.name}: ${fileErr.message}`);
+                    logBatch(`❌ Error processing ${handle.name}: ${fileErr.message}`);
                     failCount++;
                 }
             }
-        }
-        logBatch(`🏁 Batch finished. Success: ${successCount}, Failed: ${failCount}`);
-    } catch (err) {
+            logBatch(`🏁 Batch finished. Success: ${successCount}, Failed: ${failCount}`);
+        } catch (err) {
         logBatch(`❌ Fatal error: ${err.message}`);
     }
     runBtn.innerText = "Batch Complete";
 }
 </script>
+
+</body>
 </html>
